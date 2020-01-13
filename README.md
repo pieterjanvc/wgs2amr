@@ -61,16 +61,16 @@ The output file will be named after the first sequence file used in the format `
 
 The first column contains the names of the 8 antibiotics for which predictions were made, the second column the predicted susceptibility (susceptible or resistant), the last column the reliability, offering some idea of the degree the model thinks the output is correct (0 = very uncertain to 1 = near certain)
 
-```Bash
-#Test files expected output
-antibiotic   prediction	 reliability
-cefepime      resistant  	0.70
-cefotaxime	  resistant  	0.78
-ceftriaxone	  resistant	    0.98
-ciprofloxacin resistant	    0.96
-gentamicin	  suseptible	0.88
-levofloxacin  resistant	    0.96
-meropenem	  suseptible	0.40
-tobramycin    resistant	    0.66
-```
+Example of the test file output:
+
+|antibiotic    |prediction | reliability|
+|:-------------|:----------|-----------:|
+|cefepime      |resistant  |        0.70|
+|cefotaxime    |resistant  |        0.78|
+|ceftriaxone   |resistant  |        0.98|
+|ciprofloxacin |resistant  |        0.96|
+|gentamicin    |suseptible |        0.88|
+|levofloxacin  |resistant  |        0.96|
+|meropenem     |suseptible |        0.40|
+|tobramycin    |resistant  |        0.66|
 ___

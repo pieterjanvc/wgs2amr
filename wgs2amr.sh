@@ -32,7 +32,7 @@ echo -e "\n--" `date` "-- Start AMR prediction pipeline" >> $projectFolder\log
 mkdir -p $outputFolder
 
 #Make sure the temp folder is clean
-rm $projectFolder\temp/*
+rm -f $projectFolder\temp/*
 
 #Count the number of reads in the file
 echo `date +"%T"` "Counting reads..." >> $projectFolder\log
