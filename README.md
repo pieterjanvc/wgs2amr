@@ -54,11 +54,10 @@ Here are some examples of a typical wgs2amr.sh call using the test data provided
 -r 'R/3.5.0' \
 -f '/pathTo/wgs2amr/testFiles/testFile.fastq.gz'
 ```
-*Note:make sure paths to folders end with a backslash*
+*Note:If an output folder is specified, make sure the path ends with a backslash*
 
 ## Output
-The output file will be named after the first sequence file used in the format `<filename>_AMRpredictions.csv` and found in the default or specified output folder.
-
+The output file will be named after the first sequence file used in the format `<filename>_AMRpredictions.csv` and found in the default or specified output folder. 
 The first column contains the names of the 8 antibiotics for which predictions were made, the second column the predicted susceptibility (susceptible or resistant), the last column the reliability, offering some idea of the degree the model thinks the output is correct (0 = very uncertain to 1 = near certain)
 
 Example of the test file output:
@@ -74,3 +73,5 @@ Example of the test file output:
 |meropenem     |suseptible |        0.40|
 |tobramycin    |resistant  |        0.66|
 ___
+
+*NOTE: Temporary files like the diamond alignment files are stored in the `wgs2amr/temp` folder and can safely be removed after finishing the pipeline.*

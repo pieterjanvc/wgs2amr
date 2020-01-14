@@ -24,9 +24,8 @@ options(stringsAsFactors = F)
 projectFolder = args[[1]]
 resultsFolder = args[[2]]
 fileName = str_extract(args[[3]], "\\w+(?=\\.fastq)")
-
-
 readCounts = as.integer(args[[4]])
+sessionID = args[[5]]
 
 setwd(projectFolder)
 refGenes = read.csv("scriptsAndData/refGenes.csv")
@@ -70,9 +69,9 @@ lengthMatchFilter = function(myData, filterPercentage, allowGaps = F){
 #Create a coverage table
 #---------------------------------------------
 
-buildCoverageTable = function(diamondFolder, sampleName, seqIdentityPercent, lengthMatchPercent, refGenes, readCounts){
+buildCoverageTable = function(diamondFolder, sampleName, seqIdentityPercent, lengthMatchPercent, refGenes, readCounts, sessionID){
   
-  myFiles = list.files(diamondFolder, ".diamondOutput", full.names = T)
+  myFiles = list.files(diamondFolder, pattern = paste0(sessionID, "_[1,2]\\.diamondOutput"), full.names = T)
 
   diamondTable = map_df(myFiles, function(x){
     if(file.info(x)$size == 0){
@@ -150,14 +149,13 @@ buildCoverageTable = function(diamondFolder, sampleName, seqIdentityPercent, len
 #############################################
 
 #Create coverage table from diamondoutput using the ref genes
-write(paste0(format(Sys.time(), "%H:%M:%S"), "  creating coverage table"),
-      file = "log", append = T)
+cat(paste0(format(Sys.time(), "%H:%M:%S"), "  creating coverage table\n"))
 
 coverageTable = buildCoverageTable("temp/", fileName, seqIdentityPercent, 
-                              lengthMatchPercent, refGenes, readCounts) %>% 
+                              lengthMatchPercent, refGenes, readCounts, sessionID) %>% 
   filter(adaptiveCoverage > 0.9)
 
-write.csv(coverageTable, "temp/coverageTable.csv", row.names = F)
+write.csv(coverageTable, paste0("temp/", sessionID, ".csv"), row.names = F)
 
 
 #Generate inputvector for ML
@@ -173,8 +171,7 @@ inputVector = ifelse(is.na(inputVector$arc), 0, inputVector$arc)
 
 ##### Run models ###########
 ############################
-write(paste0(format(Sys.time(), "%H:%M:%S"), "  running predictions"),
-      file = "log", append = T)
+cat(paste0(format(Sys.time(), "%H:%M:%S"), "  running predictions\n"))
 
 models = readRDS("scriptsAndData/medianModels.rds")
 toKeep = readRDS("scriptsAndData/colsToKeep.rds")
