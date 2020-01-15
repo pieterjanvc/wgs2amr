@@ -72,8 +72,9 @@ else
 fi;
 if [ -z ${outputFolder+x} ]; then outputFolder=$projectFolder\RESULTS/; fi;
 
-#Make sure output folder is present	
+#Make all folders needed are present	
 mkdir -p $outputFolder
+mkdir -p $projectFolder\temp/
 
 #Count the number of reads in the file
 echo `date +"%T"` "Counting reads..."
