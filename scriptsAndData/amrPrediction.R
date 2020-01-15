@@ -68,7 +68,6 @@ lengthMatchFilter = function(myData, filterPercentage, allowGaps = F){
 
 #Create a coverage table
 #---------------------------------------------
-
 buildCoverageTable = function(diamondFolder, sampleName, seqIdentityPercent, lengthMatchPercent, refGenes, readCounts, sessionID){
   
   myFiles = list.files(diamondFolder, pattern = paste0(sessionID, "_[1,2]\\.diamondOutput"), full.names = T)
@@ -86,62 +85,71 @@ buildCoverageTable = function(diamondFolder, sampleName, seqIdentityPercent, len
                              "qend", "sseqid", "slen", "sstart", "send", "evalue",
                              "length", "pident", "nident", "gapopen")
   
-  # totalDiamondAlignments = nrow(diamondTable)
-  
-  
+
   ##### PART 1 - Filtering #####
   ##############################
   myResult = seqIdentityFilter(diamondTable, seqIdentityPercent)
   myResult = lengthMatchFilter(myResult, lengthMatchPercent)
 
-  
-  ##### PART 2 - Calculate the coverage of the genes #####
-  ########################################################
-  
-  #Create 3 new columns:
-  #Gene coverage without taking matching percentage into account
-  #Gene coverage taking highest similatrity percentage into account (pIdent)
-  #Total number of alignments to the gene
-
-  coverageTable = refGenes %>% add_column(mixedSampleName = sampleName, .before = T)
-  
-  #For every gene present, calculate its coverage
-  genesCoverage = map_df(unique(myResult$sseqid), function(seqId){
+  if(nrow(myResult) > 0){
+    ##### PART 2 - Calculate the coverage of the genes #####
+    ########################################################
     
-    #Get all reads that align to a gene
-    allReads = myResult %>% filter(sseqid == seqId)
+    #Create 3 new columns:
+    #Gene coverage without taking matching percentage into account
+    #Gene coverage taking highest similatrity percentage into account (pIdent)
+    #Total number of alignments to the gene
     
-    cover = rep(0, allReads$slen[1])
-    cover = t(apply(allReads %>% select(sstart, send, pident), 1, function(x) {
-      cover[x[1]:x[2]] = x[3]
-      cover
-    }))
+    coverageTable = refGenes %>% add_column(mixedSampleName = sampleName, .before = T)
     
-    cDepth = apply(cover, 2, function(x) sum(x > 0))
-    adaptiveC = apply(cover, 2, function(x) {
-      if(sum(x) == 0){
-        0
-      } else {
-        max(x[x > 0])
-      }
-    })
-    simpleCoverage = mean(ifelse(colSums(cover) > 0, 1, 0))
-    adaptiveCoverage = mean(adaptiveC)/100
-
-    nAlignments = nrow(allReads)
+    #For every gene present, calculate its coverage
+    genesCoverage = map_df(unique(myResult$sseqid), function(seqId){
+      
+      #Get all reads that align to a gene
+      allReads = myResult %>% filter(sseqid == seqId)
+      
+      cover = rep(0, allReads$slen[1])
+      cover = t(apply(allReads %>% select(sstart, send, pident), 1, function(x) {
+        cover[x[1]:x[2]] = x[3]
+        cover
+      }))
+      
+      cDepth = apply(cover, 2, function(x) sum(x > 0))
+      adaptiveC = apply(cover, 2, function(x) {
+        if(sum(x) == 0){
+          0
+        } else {
+          max(x[x > 0])
+        }
+      })
+      simpleCoverage = mean(ifelse(colSums(cover) > 0, 1, 0))
+      adaptiveCoverage = mean(adaptiveC)/100
+      
+      nAlignments = nrow(allReads)
+      
+      return(data.frame(seqId = seqId, simpleCoverage = simpleCoverage, 
+                        adaptiveCoverage= adaptiveCoverage, nAlignments = nAlignments))
+      })
     
-    return(data.frame(seqId = seqId, simpleCoverage = simpleCoverage, 
-                      adaptiveCoverage= adaptiveCoverage, nAlignments = nAlignments))
+    coverageTable = coverageTable %>% left_join(genesCoverage, by = c("geneIdNCBI" = "seqId")) %>% 
+      filter(adaptiveCoverage > 0)
     
-  })
+    if(nrow(coverageTable) == 0){
+      
+      return(data.frame())
+      
+    } else {
+      #Adjust number of aligments to seq depth
+      coverageTable$adjustedReadCount = coverageTable$nAlignments / (coverageTable$geneLength * ((readCounts * length(myFiles)) / 10000000))
+      
+      return(coverageTable)
+    }
+    
+    
+  } else {
+    return(data.frame())
+  }
   
-  coverageTable = coverageTable %>% left_join(genesCoverage, by = c("geneIdNCBI" = "seqId")) %>% 
-    filter(adaptiveCoverage > 0)
-  
-  #Adjust number of aligments to seq depth
-  coverageTable$adjustedReadCount = coverageTable$nAlignments / (coverageTable$geneLength * ((readCounts * length(myFiles)) / 10000000))
-  
-  return(coverageTable)
 }
 
 
@@ -159,15 +167,17 @@ write.csv(coverageTable, paste0("temp/", sessionID, ".csv"), row.names = F)
 
 
 #Generate inputvector for ML
-inputVector = refGenes %>% distinct(simplifiedId) %>% 
-  left_join(coverageTable %>% 
-              group_by(simplifiedId) %>% 
-              summarise(arc = mean(adjustedReadCount)), by = c("simplifiedId" = "simplifiedId")) %>% 
-  arrange(simplifiedId)
-
-inputVector = ifelse(is.na(inputVector$arc), 0, inputVector$arc)  
-
-
+if(nrow(coverageTable) > 0){
+  inputVector = refGenes %>% distinct(simplifiedId) %>% 
+    left_join(coverageTable %>% 
+                group_by(simplifiedId) %>% 
+                summarise(arc = mean(adjustedReadCount)), by = c("simplifiedId" = "simplifiedId")) %>% 
+    arrange(simplifiedId)
+  
+  inputVector = ifelse(is.na(inputVector$arc), 0, inputVector$arc)  
+} else {
+  inputVector = rep(0, 1027)
+}
 
 ##### Run models ###########
 ############################

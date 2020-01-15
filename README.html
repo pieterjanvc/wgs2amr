@@ -381,6 +381,10 @@ summary {
 <h3>R</h3>
 <p>Processing of the output as created by the DIAMOND aligner and predicing the AMR is done in R. For this project, R 3.5.0 was used, so this or any later version should work (though older versions are expected to work as well). After <a href="https://www.r-project.org/">installing R</a> on your machine, the following packages need to be installed before running the pipeline:</p>
 <pre class="r"><code>install.packages(c(&quot;tibble&quot;, &quot;dplyr&quot;, &quot;seqinr&quot;, &quot;stringr&quot;, &quot;purrr&quot;, &quot;DescTools&quot;, &quot;xgboost&quot;))</code></pre>
+</div>
+<div id="sra-tools-optional" class="section level3">
+<h3>SRA-Tools (optional)</h3>
+<p>In case you like to download and process publicly available files directly from NCBI’s Sequence Reads Archive (SRA), you can install the <a href="https://ncbi.github.io/sra-tools/">SRA-Tools</a>.</p>
 <hr />
 </div>
 </div>
@@ -388,6 +392,7 @@ summary {
 <h2>Input</h2>
 <p>The models were created to make predictions for the following bacterial species: Acinetobacter baumannii, Enterobacter cloacae, Escherichia Coli, Klebsiella aerogenes and Klebsiella pneumoniae. They were trained to be species independent and could theoretically make predictions on other Gram-negative species, but have not been validated for those thus far.</p>
 <p>The files used as input should be next-generation-sequencing files in either fastq or compressed fastq.gz format. This can be in one single file or two separate files in case of pair-end read files. The <code>testFiles</code> folder in the <code>wgs2amr</code> folder contains dummy files that can be used to test the pipeline when all dependencies are installed.</p>
+<p>It is also possible to download and process files directly from NCBI’s Sequence Reads Archive (SRA) if the SRA-Tools has been installed on your machine and you know the SRR number of the bacterium of interest.</p>
 <hr />
 </div>
 <div id="running-the-pipeline" class="section level2">
@@ -396,14 +401,24 @@ summary {
 <h3>Download the project folder</h3>
 <p>Download the <code>wgs2amr</code> folder from this GitHub page and put it on the same machine where you installed the dependencies.</p>
 </div>
-<div id="call-the-wgs2amr.sh-script" class="section level3">
-<h3>Call the wgs2amr.sh script</h3>
+<div id="call-the-wgs2amr.sh-script---local-files" class="section level3">
+<h3>Call the wgs2amr.sh script - Local files</h3>
 <p>The <code>wgs2amr</code> folder contains the master script <code>wgs2amr.sh</code> that can be called with the following arguments</p>
 <ul>
 <li>-d : Path to the diamond script in the diamond folder</li>
 <li>-r : Either path to the Rscript in the R bin folder, or the name of the R module to load on a linux machine (e.g. R/3.5.0)</li>
 <li>-f : The first sequence file. If there is only one sequence file, this one should be set. Both fastq and fastq.gz are supported</li>
 <li>-s : The second sequence file in case of two pair-end reads files. Again, both fastq and fastq.gz are supported. In case of only one file, this argument can be omitted</li>
+<li>-o : The location of the output folder where the prediction results in csv format will be stored. If not set, this will default to the <code>RESULTS</code> folder within the <code>wgs2amr</code> folder</li>
+</ul>
+</div>
+<div id="call-the-wgs2amr.sh-script---download-data-from-sra" class="section level3">
+<h3>Call the wgs2amr.sh script - Download data from SRA</h3>
+<ul>
+<li>-n : Use NCBI’s SRAToolkit’s <code>fastq-dump</code> to download a SRR file. Set this parameter to the path of the fastq-dump script.</li>
+<li>-d : Path to the diamond script in the diamond folder</li>
+<li>-r : Either path to the Rscript in the R bin folder, or the name of the R module to load on a linux machine (e.g. R/3.5.0)</li>
+<li>-f : This should be the SRR number you like to download and process. The files will be put in <code>wgs2amr/downloads/</code></li>
 <li>-o : The location of the output folder where the prediction results in csv format will be stored. If not set, this will default to the <code>RESULTS</code> folder within the <code>wgs2amr</code> folder</li>
 </ul>
 <p>Here are some examples of a typical wgs2amr.sh call using the test data provided in the wgs2amr</p>
@@ -418,13 +433,18 @@ summary {
 -d &#39;/pathToDiamond/diamond&#39; \
 -r &#39;R/3.5.0&#39; \
 -f &#39;/pathTo/wgs2amr/testFiles/testFile.fastq.gz&#39;</code></pre>
-<p><em>Note:make sure paths to folders end with a backslash</em></p>
+<pre class="bash"><code>#Downloading data from NCBI&#39;s SRA then processing it
+/pathToScript/wgs2amr.sh \
+-n &#39;/pathToSRAtoolkit/fastq-dump&#39;
+-d &#39;/pathToDiamond/diamond&#39; \
+-r &#39;R/3.5.0&#39; \
+-f &#39;SRR2976831&#39;</code></pre>
+<p><em>Note:If an output folder is specified, make sure the path ends with a backslash</em></p>
 </div>
 </div>
 <div id="output" class="section level2">
 <h2>Output</h2>
-<p>The output file will be named after the first sequence file used in the format <code>&lt;filename&gt;_AMRpredictions.csv</code> and found in the default or specified output folder.</p>
-<p>The first column contains the names of the 8 antibiotics for which predictions were made, the second column the predicted susceptibility (susceptible or resistant), the last column the reliability, offering some idea of the degree the model thinks the output is correct (0 = very uncertain to 1 = near certain)</p>
+<p>The output file will be named after the first sequence file used in the format <code>&lt;filename&gt;_AMRpredictions.csv</code> and found in the default or specified output folder. The first column contains the names of the 8 antibiotics for which predictions were made, the second column the predicted susceptibility (susceptible or resistant), the last column the reliability, offering some idea of the degree the model thinks the output is correct (0 = very uncertain to 1 = near certain)</p>
 <p>Example of the test file output:</p>
 <table>
 <thead>
@@ -478,6 +498,7 @@ summary {
 </tbody>
 </table>
 <hr />
+<p><em>NOTE: Temporary files like the diamond alignment files are stored in the <code>wgs2amr/temp</code> folder and can safely be removed after finishing the pipeline.</em></p>
 </div>
 </div>
 
