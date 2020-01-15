@@ -392,7 +392,7 @@ summary {
 <h2>Input</h2>
 <p>The models were created to make predictions for the following bacterial species: Acinetobacter baumannii, Enterobacter cloacae, Escherichia Coli, Klebsiella aerogenes and Klebsiella pneumoniae. They were trained to be species independent and could theoretically make predictions on other Gram-negative species, but have not been validated for those thus far.</p>
 <p>The files used as input should be next-generation-sequencing files in either fastq or compressed fastq.gz format. This can be in one single file or two separate files in case of pair-end read files. The <code>testFiles</code> folder in the <code>wgs2amr</code> folder contains dummy files that can be used to test the pipeline when all dependencies are installed.</p>
-<p>It is also possible to download and process files directly from NCBI’s Sequence Reads Archive (SRA) if the SRA-Tools has been installed on your machine and you know the SRR number of the bacterium of interest.</p>
+<p>It is also possible to download and process files directly from NCBI’s <a href="https://www.ncbi.nlm.nih.gov/sra">Sequence Reads Archive (SRA)</a> if the SRA-Tools have been installed on your machine and you know the SRR number of the sample of interest. Our pipeline can take process files of different sequencing depths, but know that shallow sequencing is more likely to miss important resistance genes and thus the error rate could be higher in such cases.</p>
 <hr />
 </div>
 <div id="running-the-pipeline" class="section level2">
@@ -405,20 +405,10 @@ summary {
 <h3>Call the wgs2amr.sh script - Local files</h3>
 <p>The <code>wgs2amr</code> folder contains the master script <code>wgs2amr.sh</code> that can be called with the following arguments</p>
 <ul>
-<li>-d : Path to the diamond script in the diamond folder</li>
-<li>-r : Either path to the Rscript in the R bin folder, or the name of the R module to load on a linux machine (e.g. R/3.5.0)</li>
+<li>-d : Path to the <code>diamond</code> script in the diamond folder</li>
+<li>-r : Either path to the <code>Rscript</code> in the R bin folder, or the name of the R module to load on a linux machine (e.g. R/3.5.0)</li>
 <li>-f : The first sequence file. If there is only one sequence file, this one should be set. Both fastq and fastq.gz are supported</li>
 <li>-s : The second sequence file in case of two pair-end reads files. Again, both fastq and fastq.gz are supported. In case of only one file, this argument can be omitted</li>
-<li>-o : The location of the output folder where the prediction results in csv format will be stored. If not set, this will default to the <code>RESULTS</code> folder within the <code>wgs2amr</code> folder</li>
-</ul>
-</div>
-<div id="call-the-wgs2amr.sh-script---download-data-from-sra" class="section level3">
-<h3>Call the wgs2amr.sh script - Download data from SRA</h3>
-<ul>
-<li>-n : Use NCBI’s SRAToolkit’s <code>fastq-dump</code> to download a SRR file. Set this parameter to the path of the fastq-dump script.</li>
-<li>-d : Path to the diamond script in the diamond folder</li>
-<li>-r : Either path to the Rscript in the R bin folder, or the name of the R module to load on a linux machine (e.g. R/3.5.0)</li>
-<li>-f : This should be the SRR number you like to download and process. The files will be put in <code>wgs2amr/downloads/</code></li>
 <li>-o : The location of the output folder where the prediction results in csv format will be stored. If not set, this will default to the <code>RESULTS</code> folder within the <code>wgs2amr</code> folder</li>
 </ul>
 <p>Here are some examples of a typical wgs2amr.sh call using the test data provided in the wgs2amr</p>
@@ -433,12 +423,23 @@ summary {
 -d &#39;/pathToDiamond/diamond&#39; \
 -r &#39;R/3.5.0&#39; \
 -f &#39;/pathTo/wgs2amr/testFiles/testFile.fastq.gz&#39;</code></pre>
+</div>
+<div id="call-the-wgs2amr.sh-script---download-data-from-sra" class="section level3">
+<h3>Call the wgs2amr.sh script - Download data from SRA</h3>
+<p>This will download the read files of the specified SRR from NCBI’s SRA and put them in the <code>wgs2amr/downloads/</code> folder. If the files already have been downloaded, this step will be skipped to save time and banswidth. Should the file be corrupt and lead to errors, simply delete both read files from the foolder and run the scrip again, in which a new download will start.</p>
+<ul>
+<li>-n : Use NCBI’s SRAToolkit’s <code>fastq-dump</code> to download a SRR file. Set this parameter to the path of the fastq-dump script or the name of the SRAToolkit module to be loaded on a linux machine.</li>
+<li>-d : Path to the <code>diamond</code> script in the diamond folder</li>
+<li>-r : Either path to the <code>Rscript</code> in the R bin folder, or the name of the R module to load on a linux machine (e.g. R/3.5.0)</li>
+<li>-f : This should be the SRR number you like to download and process.</li>
+<li>-o : The location of the output folder where the prediction results in csv format will be stored. If not set, this will default to the <code>RESULTS</code> folder within the <code>wgs2amr</code> folder</li>
+</ul>
 <pre class="bash"><code>#Downloading data from NCBI&#39;s SRA then processing it
 /pathToScript/wgs2amr.sh \
 -n &#39;/pathToSRAtoolkit/fastq-dump&#39;
 -d &#39;/pathToDiamond/diamond&#39; \
 -r &#39;R/3.5.0&#39; \
--f &#39;SRR2976831&#39;</code></pre>
+-f &#39;SRR4017839&#39;</code></pre>
 <p><em>Note:If an output folder is specified, make sure the path ends with a backslash</em></p>
 </div>
 </div>

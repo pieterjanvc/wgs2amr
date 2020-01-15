@@ -21,7 +21,7 @@ while getopts ":n:d:r:f:s:o:" opt; do
 done
 
 projectFolder=`dirname $0`/
-sessionID=1579045030 #`date +%s`
+sessionID=`date +%s`
 
 #--- START SCRIPT ---
 touch $projectFolder\log
@@ -42,14 +42,32 @@ then
 	if [ -z ${readFile1+x} ]; then echo -e "\nNo read file specified. Use -f /path/readFile1.fastq.gz"; exit 1; fi;
 	if [ -z ${readFile2+x} ]; then echo -e "\nOne read file provided, assuming single read file used \n"; fi;
 else
-	if [ -z ${readFile1+x} ]; then echo -e "\nSRR specified. Ex: Use -f SRR6674809"; exit 1; fi;
+	if [ -z ${readFile1+x} ]; then echo -e "\nNo SRR specified. Ex: -f SRR6674809"; exit 1; fi;
 	
-	echo `date +"%T"` "Start download from SRA..."
 	SRR=$readFile1
-	# $sraToolkit -O $projectFolder\downloads/ --split-files --gzip $SRR
+	
+	if `ls $projectFolder\downloads/ | grep -q $readFile1`
+	then
+		echo `date +"%T"` "File already downloaded from SRA, skipping download"
+	else
+		echo `date +"%T"` "Start download from SRA..."
+				
+		#Load the SRAToolkit module depending on the input
+		if grep -q fastq-dump <<< $sraToolkit
+		then 
+			#Pointed to fastq-dump location
+			$sraToolkit -O $projectFolder\downloads/ --split-files --gzip $SRR
+		else
+			#Loading SRA module
+			module load $sraToolkit
+			fastq-dump -O $projectFolder\downloads/ --split-files --gzip $SRR
+		fi
+		echo `date +"%T"` " download finished"
+	fi
+		
 	readFile1=$projectFolder\downloads/$SRR\_1.fastq.gz
 	readFile2=$projectFolder\downloads/$SRR\_2.fastq.gz
-	echo `date +"%T"` " download finished"
+	
 fi;
 if [ -z ${outputFolder+x} ]; then outputFolder=$projectFolder\RESULTS/; fi;
 
@@ -61,25 +79,25 @@ echo `date +"%T"` "Counting reads..."
 readCounts=`zcat $readFile1 | wc -l`
 echo `date +"%T"` " done"
 
-# #Run DIAMOND aligner on the files
-# echo `date +"%T"` "Start DIAMOND alignment File 1 ..."
-# $diamondPackage blastx \
-# -d $projectFolder\scriptsAndData/ncbi_ab_resistance_genes.dmnd \
-# -q $readFile1 \
-# -o $projectFolder\temp/$sessionID\_1.diamondOutput \
-# -f 6 qseqid qframe qcovhsp qlen qstart qend sseqid slen sstart send evalue length pident nident gapopen
-# echo -e `date +"%T"` "DIAMOND alignment File 1 finished \n"
+#Run DIAMOND aligner on the files
+echo `date +"%T"` "Start DIAMOND alignment File 1 ..."
+$diamondPackage blastx \
+-d $projectFolder\scriptsAndData/ncbi_ab_resistance_genes.dmnd \
+-q $readFile1 \
+-o $projectFolder\temp/$sessionID\_1.diamondOutput \
+-f 6 qseqid qframe qcovhsp qlen qstart qend sseqid slen sstart send evalue length pident nident gapopen
+echo -e `date +"%T"` "DIAMOND alignment File 1 finished \n"
 
-# if [ ! -z ${readFile2+x} ]
-# then
-	# echo `date +"%T"` "Start DIAMOND alignment File 2 ..."
-	# $diamondPackage blastx \
-	# -d $projectFolder\scriptsAndData/ncbi_ab_resistance_genes.dmnd \
-	# -q $readFile2 \
-	# -o $projectFolder\temp/$sessionID\_2.diamondOutput \
-	# -f 6 qseqid qframe qcovhsp qlen qstart qend sseqid slen sstart send evalue length pident nident gapopen
-	# echo `date +"%T"` "DIAMOND alignment File 2 finished"
-# fi
+if [ ! -z ${readFile2+x} ]
+then
+	echo `date +"%T"` "Start DIAMOND alignment File 2 ..."
+	$diamondPackage blastx \
+	-d $projectFolder\scriptsAndData/ncbi_ab_resistance_genes.dmnd \
+	-q $readFile2 \
+	-o $projectFolder\temp/$sessionID\_2.diamondOutput \
+	-f 6 qseqid qframe qcovhsp qlen qstart qend sseqid slen sstart send evalue length pident nident gapopen
+	echo `date +"%T"` "DIAMOND alignment File 2 finished"
+fi
 
 #Run the R script
 echo `date +"%T"` "Start processing in R ..."
