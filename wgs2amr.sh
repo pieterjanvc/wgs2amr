@@ -45,6 +45,7 @@ else
 	if [ -z ${readFile1+x} ]; then echo -e "\nNo SRR specified. Ex: -f SRR6674809"; exit 1; fi;
 	
 	SRR=$readFile1
+	mkdir -p $projectFolder\downloads
 	
 	if `ls $projectFolder\downloads/ | grep -q $readFile1`
 	then
